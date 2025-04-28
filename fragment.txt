@@ -1,0 +1,250 @@
+🧪 Experiment Title:
+Design a mobile application to create two fragments and pass data from one fragment to another.
+
+🎯 Aim:
+To design an application using implicit and explicit intents.
+
+🧱 Step 1: Create a New Android Project
+✅ In Android Studio:
+Name: FragmentIntentApp
+
+Language: Java
+
+Minimum SDK: API 21 (Lollipop) or higher
+
+Select Empty Activity
+
+
+🧰 Step 2: Create Your Project Structure
+
+You will have:
+
+diff
+Copy
+Edit
+- MainActivity.java (host activity)
+- FirstFragment.java
+- SecondFragment.java
+- fragment_first.xml
+- fragment_second.xml
+
+We'll create two fragments.
+
+In FirstFragment, user enters data and clicks a button.
+
+This data is passed to SecondFragment.
+
+We'll simulate explicit intent when switching fragments.
+
+We'll use an implicit intent to open a browser from a button in SecondFragment.
+
+
+
+activity_main.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/fragment_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
+
+MainActivity.java
+
+package com.example.fragmentintentapp;
+
+import androidx.appcompat.app.AppCompatActivity;
+import android.os.Bundle;
+
+public class MainActivity extends AppCompatActivity {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        // Load FirstFragment by default
+        getSupportFragmentManager()
+            .beginTransaction()
+            .replace(R.id.fragment_container, new FirstFragment())
+            .commit();
+    }
+}
+
+
+FirstFragment.java
+
+package com.example.fragmentintentapp;
+
+import android.os.Bundle;
+import androidx.fragment.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+
+public class FirstFragment extends Fragment {
+
+    EditText inputText;
+    Button sendButton;
+
+    public FirstFragment() { }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_first, container, false);
+
+        inputText = view.findViewById(R.id.editTextData);
+        sendButton = view.findViewById(R.id.buttonSend);
+
+        sendButton.setOnClickListener(v -> {
+            String data = inputText.getText().toString();
+
+            // Explicit intent simulation using Fragment transaction
+            SecondFragment secondFragment = new SecondFragment();
+
+            Bundle bundle = new Bundle();
+            bundle.putString("key", data);
+            secondFragment.setArguments(bundle);
+
+            requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, secondFragment)
+                .addToBackStack(null)
+                .commit();
+        });
+
+        return view;
+    }
+}
+
+
+fragment_first.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <EditText
+        android:id="@+id/editTextData"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter data to send" />
+
+    <Button
+        android:id="@+id/buttonSend"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send to Second Fragment"
+        android:layout_marginTop="20dp" />
+</LinearLayout>
+
+
+SecondFragment.java
+
+
+package com.example.fragmentintentapp;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import androidx.fragment.app.Fragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+
+public class SecondFragment extends Fragment {
+
+    TextView receivedText;
+    Button openBrowserButton;
+
+    public SecondFragment() { }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_second, container, false);
+
+        receivedText = view.findViewById(R.id.textViewReceived);
+        openBrowserButton = view.findViewById(R.id.buttonOpenBrowser);
+
+        // Get data from bundle
+        String data = getArguments().getString("key", "No data received");
+        receivedText.setText("Received: " + data);
+
+        // Implicit Intent to open browser
+        openBrowserButton.setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com"));
+            startActivity(intent);
+        });
+
+        return view;
+    }
+}
+
+
+
+fragment_second.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/textViewReceived"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Received data will appear here" />
+
+    <Button
+        android:id="@+id/buttonOpenBrowser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Open Google"
+        android:layout_marginTop="20dp" />
+</LinearLayout>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

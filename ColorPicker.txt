@@ -1,0 +1,274 @@
+build.gradle
+
+
+
+plugins {
+    alias(libs.plugins.android.application)
+}
+
+android {
+    namespace = "com.example.colorpicker"
+    compileSdk = 35
+
+    defaultConfig {
+        applicationId = "com.example.colorpicker"
+        minSdk = 24
+        targetSdk = 35
+        versionCode = 1
+        versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+ Imp  Tip   // Add this block below defaultConfig
+    buildFeatures {
+        viewBinding = true
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+
+dependencies {
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.activity)
+    implementation(libs.constraintlayout)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ColorWheelView.java
+
+
+package com.example.colorpicker;
+
+import android.content.Context;
+import android.graphics.*;
+import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
+
+public class ColorWheelView extends View {
+
+    private Bitmap colorWheel;
+    private Paint paint;
+    private OnColorChangeListener listener;
+
+    public ColorWheelView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        int size = 600;
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        colorWheel = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(colorWheel);
+        float radius = size / 2f;
+
+        for (int y = 0; y < size; y++) {
+            for (int x = 0; x < size; x++) {
+                float dx = x - radius;
+                float dy = y - radius;
+                double distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance <= radius) {
+                    float angle = (float) ((Math.toDegrees(Math.atan2(dy, dx)) + 360) % 360);
+                    float saturation = (float) (distance / radius);
+                    int color = Color.HSVToColor(new float[]{angle, saturation, 1f});
+                    colorWheel.setPixel(x, y, color);
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        canvas.drawBitmap(colorWheel, 0, 0, paint);
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        float x = event.getX();
+        float y = event.getY();
+        float center = getWidth() / 2f;
+        float dx = x - center;
+        float dy = y - center;
+        double distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= center && (event.getAction() == MotionEvent.ACTION_DOWN || event.getAction() == MotionEvent.ACTION_MOVE)) {
+            float angle = (float) ((Math.toDegrees(Math.atan2(dy, dx)) + 360) % 360);
+            float saturation = (float) (distance / center);
+            if (listener != null) {
+                listener.onColorChange(angle, saturation);
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    public void setOnColorChangeListener(OnColorChangeListener l) {
+        this.listener = l;
+    }
+
+    public interface OnColorChangeListener {
+        void onColorChange(float hue, float saturation);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+activity_main.xml
+
+
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="20dp">
+
+    <com.example.colorpicker.ColorWheelView
+        android:id="@+id/colorWheel"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp" />
+
+    <SeekBar
+        android:id="@+id/alphaSeekBar"
+        android:layout_below="@id/colorWheel"
+        android:layout_marginTop="20dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="255"/>
+
+    <SeekBar
+        android:id="@+id/valueSeekBar"
+        android:layout_below="@id/alphaSeekBar"
+        android:layout_marginTop="10dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"/>
+
+    <View
+        android:id="@+id/previewColor"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_below="@id/valueSeekBar"
+        android:layout_marginTop="20dp"
+        android:background="#FFFFFF"/>
+
+</RelativeLayout>
+
+
+MainActivity.java
+
+package com.example.colorpicker;
+
+import android.graphics.Color;
+import android.os.Bundle;
+import android.widget.SeekBar;
+import android.view.View;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.colorpicker.databinding.ActivityMainBinding;
+
+public class MainActivity extends AppCompatActivity {
+
+    private ActivityMainBinding binding;
+    private float[] hsv = {0f, 1f, 1f};
+    private int alpha = 255;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+
+        binding.colorWheel.setOnColorChangeListener(new ColorWheelView.OnColorChangeListener() {
+            @Override
+            public void onColorChange(float hue, float saturation) {
+                hsv[0] = hue;
+                hsv[1] = saturation;
+                updateColor();
+            }
+        });
+
+        binding.alphaSeekBar.setOnSeekBarChangeListener(seekListener(progress -> {
+            alpha = progress;
+            updateColor();
+        }));
+
+        binding.valueSeekBar.setOnSeekBarChangeListener(seekListener(progress -> {
+            hsv[2] = progress / 100f;
+            updateColor();
+        }));
+    }
+
+    private void updateColor() {
+        int color = Color.HSVToColor(alpha, hsv);
+        binding.previewColor.setBackgroundColor(color);
+    }
+
+    private SeekBar.OnSeekBarChangeListener seekListener(final OnSeekBarChange change) {
+        return new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                change.onChange(progress);
+            }
+
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        };
+    }
+
+    interface OnSeekBarChange {
+        void onChange(int progress);
+    }
+}

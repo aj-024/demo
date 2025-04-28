@@ -1,0 +1,156 @@
+add API key in our app 
+
+Go to:
+   https://console.cloud.google.com/
+
+Log in with your Google account
+
+Click "Select a Project" → "New Project"
+
+Name it something like MapLocationApp
+
+Click Create
+
+Go to APIs & Services → Library
+
+Enable these APIs:
+
+    Maps SDK for Android
+
+    (Optional) Geocoding API (if you want address lookup)
+
+Go to APIs & Services → Credentials
+
+Click Create Credentials → API Key
+
+Copy the API key that is shown
+
+
+
+
+Note :- Add this line in Manifest file and add api key
+
+<meta-data
+    android:name="com.google.android.geo.API_KEY"
+    android:value="YOUR_API_KEY_HERE" />
+
+
+
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.INTERNET" />
+
+add this lines in <application> tag in manifest file
+
+
+MapsActivity.java
+
+package com.example.mapsdemo;
+
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.os.Bundle;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
+
+public class MapsActivity extends AppCompatActivity implements OnMapReadyCallback {
+
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 1001;
+    private GoogleMap mMap;
+    private FusedLocationProviderClient fusedLocationClient;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_maps);  // Make sure your XML file is named activity_maps.xml
+
+        // Initialize the fused location provider
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
+        // Get the SupportMapFragment and request map ready callback
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
+    }
+
+    // Called when the map is ready to be used
+    @Override
+    public void onMapReady(@NonNull GoogleMap googleMap) {
+        mMap = googleMap;
+        enableMyLocation();
+    }
+
+    // Enable location access and move camera to current location
+    private void enableMyLocation() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Ask the user for permission
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    LOCATION_PERMISSION_REQUEST_CODE);
+        } else {
+            mMap.setMyLocationEnabled(true);
+
+            // Get last known location and place marker
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(this, location -> {
+                        if (location != null) {
+                            LatLng currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                            mMap.addMarker(new MarkerOptions().position(currentLocation).title("You are here"));
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 16f));
+                        }
+                    });
+        }
+    }
+
+    // Handle the result from permission request
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 &&
+                grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                enableMyLocation();
+            }
+        }
+    }
+}
+
+activity_main.xml
+
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/map_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</FrameLayout>
+
+
+
+
+
+
+
+
